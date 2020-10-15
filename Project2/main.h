@@ -41,8 +41,8 @@ float deltaTime = 0.01667f;
 
 
 /* Camera things*/
-glm::vec3 cameraPos = glm::vec3(0.0f, 20.0f, -40.0f);
-glm::vec3 cameraFront = glm::vec3(1.5f, -1.0f, 3.0f);
+glm::vec3 cameraPos = glm::vec3(0.0f, 25.0f, -80.0f);
+glm::vec3 cameraFront = glm::vec3(0.f, -1.0f, 3.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec2 mouseAngles = glm::vec2(0, 0);
 
@@ -56,10 +56,7 @@ float moveMult = 5.0f;
 float mouseSpeed = 0.0f;
 
 
-/* Cloth things */
-Mesh2D* mCloth = nullptr;
 int mShaderProgram;
-const char* mClothTexture = "groundTexture.png";
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
 "layout (location = 1) in vec3 aNormal;\n"
@@ -83,14 +80,38 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "   FragColor = texColor;\n"
 "}\n\0";
 
-
-/* Vertex things */
-int mNumRows = 25;
+/* Cloth things */
+Mesh2D* mCloth = nullptr;
+const char* mClothTexture = "ghostTexture.png";
+float mStartHeight = 30.f;
+int mNumRows = 30;
 int mNumCols = 25;
-float mSpringSize = 2.f;
+float mSpringSize = 2.f; //rest length
+glm::vec3 mGravity = glm::vec3(0, -5.f, 0);
+float mMass = 1; 
+float mK = 550; 
+float mKv = 1.5; 
+float mKf = 0.6;
 
-void initVerts();
+void initClothVerts();
+void updateVerts();
 
+/* Sphere things */
+float mSphereBounceScale = 0.00000f;
+float mSphereR = 7;
+int mSphereNumVertSlices = 5;
+int mSphereNumHorizSlices = 5;
+Mesh2D* mSphere = nullptr;
+const char* mSphereTexture = "sphereTexture.png";
+
+void initSphereVerts();
+
+/* Background things */
+Mesh2D* mBackground = nullptr;
+const char* mBackgroundTexture = "backgroundTexture.jpg";
+float mBackHeight = 312.5f;
+float mBackWidth = 500.f;
+void initBackgroundVerts();
 
 /* Display things */
 void display();

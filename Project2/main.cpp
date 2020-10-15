@@ -1,6 +1,6 @@
 #include "main.h"
 
-void initVerts() {
+void initClothVerts() {
     if (mCloth) {
         auto c = mCloth;
         delete(c);
@@ -9,20 +9,102 @@ void initVerts() {
 
     vector<Vertex> verts;
     vector<unsigned int> indices;
-    for (int i = 0; i < mNumRows; i++) {
-        for (int j = 0; j < mNumCols; j++) {
-            if (j < mNumCols - 1 && i < mNumRows) {
-                indices.push_back(i * mNumCols + j);
-                indices.push_back(i * mNumCols + j + 1);
-                indices.push_back((i + 1) * mNumCols + j);
-                indices.push_back((i + 1) * mNumCols + j);
-                indices.push_back((i + 1) * mNumCols + j + 1);
-                indices.push_back(i * mNumCols + j + 1);
+    for (int y = 0; y < mNumRows; y++) {
+        for (int x = 0; x < mNumCols; x++) {
+            if (x < mNumCols - 1 && y < mNumRows - 1) {
+                indices.push_back(y * mNumCols + x);
+                indices.push_back(y * mNumCols + x + 1);
+                indices.push_back((y + 1) * mNumCols + x);
+                indices.push_back((y + 1) * mNumCols + x);
+                indices.push_back((y + 1) * mNumCols + x + 1);
+                indices.push_back(y * mNumCols + x + 1);
             }
 
-            glm::vec3 pos = glm::vec3(j * mSpringSize, 0.f, i * mSpringSize);
-            glm::vec3 norm = normalize(cameraPos - pos);
-            glm::vec2 tex = glm::vec2(1.f / mNumCols * j, 1.f / mNumRows * i);
+            glm::vec3 pos = glm::vec3(x * mSpringSize - mNumCols*mSpringSize/2.f, mStartHeight, y * mSpringSize - mNumRows * mSpringSize/2.f);
+            glm::vec3 norm = glm::vec3(0.f, 1.f, 0.f);
+            glm::vec2 tex = glm::vec2(1.f / mNumCols * x, 1.f / mNumRows * y);
+            glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
+            glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
+            verts.push_back(Vertex(pos, norm, tex, vel, acc));
+        }
+    }
+
+    mCloth = new Mesh2D(verts, indices, mClothTexture);
+}
+
+void initBackgroundVerts() {
+    if (mBackground) {
+        auto c = mBackground;
+        delete(c);
+        mBackground = nullptr;
+    }
+
+    vector<Vertex> verts;
+    glm::vec3 pos = glm::vec3(-mBackWidth / 2, -mBackHeight / 2, 100.f);
+    glm::vec3 norm = glm::vec3(0.f, 0.f, -1.f);
+    glm::vec2 tex = glm::vec2(0.f, 1.f);
+    glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
+    glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+    pos = glm::vec3(mBackWidth / 2, -mBackHeight / 2, 100.f);
+    norm = glm::vec3(0.f, 0.f, -1.f);
+    tex = glm::vec2(1.f, 1.f);
+    vel = glm::vec3(0.f, 0.f, 0.f);
+    acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+    pos = glm::vec3(mBackWidth / 2, mBackHeight / 2, 100.f);
+    norm = glm::vec3(0.f, 0.f, -1.f);
+    tex = glm::vec2(1.f, 0.f);
+    vel = glm::vec3(0.f, 0.f, 0.f);
+    acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+    pos = glm::vec3(-mBackWidth / 2, mBackHeight / 2, 100.f);
+    norm = glm::vec3(0.f, 0.f, -1.f);
+    tex = glm::vec2(0.f, 0.f);
+    vel = glm::vec3(0.f, 0.f, 0.f);
+    acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+
+    vector<unsigned int> indices;
+    indices = { 1, 0, 2, 2, 3, 0 };
+
+    mBackground = new Mesh2D(verts, indices, mBackgroundTexture);
+}
+
+void initSphereVerts() {
+    if (mSphere) {
+        auto c = mSphere;
+        delete(c);
+        mSphere = nullptr;
+    }
+
+    vector<Vertex> verts;
+    vector<unsigned int> indices;
+
+    float dTheta = 2 * M_PI / mSphereNumVertSlices;
+    float dPhi = M_PI / mSphereNumHorizSlices;
+    for (int i = 0; i < mSphereNumVertSlices; i++) {
+        for (int j = 0; j < mSphereNumHorizSlices; j++) {
+            float x = mSphereR * sin(dTheta * i) * cos(dPhi * j);
+            float z = -mSphereR * sin(dTheta * i) * sin(dPhi * j);
+            float y = mSphereR * cos(dTheta * i);
+
+            if (i < mSphereNumVertSlices - 1 && j < mSphereNumHorizSlices - 1) {
+                indices.push_back(j * mSphereNumVertSlices + i);
+                indices.push_back(j * mSphereNumVertSlices + i + 1);
+                indices.push_back((j + 1) * mSphereNumVertSlices + i);
+                indices.push_back((j + 1) * mSphereNumVertSlices + i);
+                indices.push_back((j + 1) * mSphereNumVertSlices + i + 1);
+                indices.push_back(j * mSphereNumVertSlices + i + 1);
+            }
+
+            glm::vec3 pos = glm::vec3(x, y, z);
+            glm::vec3 norm = glm::vec3(0.f, 1.f, 0.f);
+            glm::vec2 tex = glm::vec2(1.f / mNumCols * i, 1.f / mNumRows * j);
             glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
             glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
             verts.push_back(Vertex(pos, norm, tex, vel, acc));
@@ -30,7 +112,177 @@ void initVerts() {
         }
     }
 
-    mCloth = new Mesh2D(verts, indices, mClothTexture);
+    mSphere = new Mesh2D(verts, indices, mSphereTexture);
+}
+
+void updateVerts() {
+    //Reset accelerations each timestep (momentum only applies to velocity)
+    for (int i = 0; i < mNumRows; i++) {
+        for (int j = 0; j < mNumCols; j++) {
+            auto myVert = mCloth->getVertAt(i * mNumCols + j);
+            myVert.mAcceleration = mGravity;//glm::vec3(0.f, 0.f, 0.f);
+            //drag
+            int iterDiffI = 1;
+            int iterDiffJ = 1;
+            if (i == mNumRows - 1) iterDiffI = -1;
+            if (j == mNumCols - 1) iterDiffJ = -1;
+            auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mNumCols + j);
+            auto nextJVert = mCloth->getVertAt(i * mNumCols + j + iterDiffJ);
+            glm::vec3 averageVel = (nextIVert.mVelocity + nextJVert.mVelocity + myVert.mVelocity) / 3.f;
+            glm::vec3 normal = normalize(cross(nextJVert.mPosition - myVert.mPosition, nextIVert.mPosition - myVert.mPosition));
+            float area = 0.5f * length(cross((nextJVert.mPosition - myVert.mPosition), (nextIVert.mPosition - myVert.mPosition)));
+            if (length(averageVel) == 0.f) area *= 0.f;
+            else {
+                area *= (dot(averageVel, normal) / length(averageVel));
+            }
+            glm::vec3 drag = normal * (1.f / 6.f) * mKf * length(averageVel) * length(averageVel) * area;
+            myVert.mAcceleration -= drag;
+            mCloth->setVertAt(i * mNumCols + j, myVert);
+        }
+    }
+
+    //Compute (damped) Hooke's law for each spring
+    for (int i = 0; i < mNumRows; i++) {
+        for (int j = 0; j < mNumCols; j++) {
+            auto myVert = mCloth->getVertAt(i * mNumCols + j);
+            
+            if (i != mNumRows - 1) {
+                auto nextVert = mCloth->getVertAt((i + 1) * mNumCols + j);
+                glm::vec3 diff = nextVert.mPosition - myVert.mPosition;
+                float diffLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+                float stringF = -mK * (diffLength - mSpringSize);
+                //println(stringF,diff.length(),restLen);
+
+                glm::vec3 stringDir = normalize(diff);
+                float projVbot = dot(myVert.mVelocity, stringDir);
+                float projVtop = dot(nextVert.mVelocity, stringDir);
+                float dampF = -mKv * (projVtop - projVbot);
+
+                //Vec2 frictionF = vel[i].times(-kf);
+
+                glm::vec3 force = stringDir*(stringF + dampF);
+                //force.add(frictionF);
+                myVert.mAcceleration += (force*(-1.0f / mMass));
+                nextVert.mAcceleration += (force*(1.f / mMass));
+
+
+                mCloth->setVertAt(i * mNumCols + j, myVert); //mine
+                mCloth->setVertAt((i + 1) * mNumCols + j, nextVert); //down
+            }
+
+            if (j != mNumCols - 1) {
+                auto nextVert = mCloth->getVertAt(i * mNumCols + j + 1);
+                glm::vec3 diff = nextVert.mPosition - myVert.mPosition;
+                float diffLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+                float stringF = -mK * (diffLength - mSpringSize);
+                //println(stringF,diff.length(),restLen);
+
+                glm::vec3 stringDir = normalize(diff);
+                float projVbot = dot(myVert.mVelocity, stringDir);
+                float projVtop = dot(nextVert.mVelocity, stringDir);
+                float dampF = -mKv * (projVtop - projVbot);
+
+                //Vec2 frictionF = vel[i].times(-kf);
+
+                glm::vec3 force = stringDir * (stringF + dampF);
+                //force.add(frictionF);
+                myVert.mAcceleration += (force * (-1.0f / mMass));
+                nextVert.mAcceleration += (force * (1.f / mMass));
+
+
+                mCloth->setVertAt(i * mNumCols + j, myVert); //mine
+                mCloth->setVertAt(i * mNumCols + j + 1, nextVert); //right
+            }
+        }
+    }
+
+    //Eulerian integration
+    for (int i = 0; i < mNumRows; i++) {
+        for (int j = 0; j < mNumCols; j++) {
+            auto myVert = mCloth->getVertAt(i * mNumCols + j);
+
+            //auto prevPos = myVert.mPosition
+
+            float posLength = sqrt(myVert.mPosition.x * myVert.mPosition.x + myVert.mPosition.y * myVert.mPosition.y + myVert.mPosition.z * myVert.mPosition.z);
+            if (posLength != 0.f && posLength < mSphereR * 1.1f) {
+                /*bool log = false;
+                if (i == (int)mNumRows / 2 && j == (int)mNumCols / 2) {
+                    cout << "i = " << i << " j = " << j << endl << "orig pos dist to center: " << posLength << endl;
+                    log = true;
+                }*/
+                //if (log) cout << "orig pos: " << myVert.mPosition.x << ", " << myVert.mPosition.y << ", " << myVert.mPosition.z << endl;
+                glm::vec3 normal = myVert.mPosition / posLength;
+                //if (log) cout << "normal: " << normal.x << ", " << normal.y << ", " << normal.z << endl;
+                float myDot = myVert.mVelocity.x * normal.x + myVert.mVelocity.y * normal.y + myVert.mVelocity.z * normal.z;
+                glm::vec3 bounce = normal * myDot;
+                //if (log) cout << "bounce: " << bounce.x << ", " << bounce.y << ", " << bounce.z << endl;
+
+                //if (log) cout << "orig vel: " << myVert.mVelocity.x << ", " << myVert.mVelocity.y << ", " << myVert.mVelocity.z << endl;
+                myVert.mVelocity = glm::vec3(0.f, 0.f, 0.f);//myVert.mVelocity - bounce * (1.f + mSphereBounceScale);
+                //if (log) cout << "new vel: " << myVert.mVelocity.x << ", " << myVert.mVelocity.y << ", " << myVert.mVelocity.z << endl;
+                //myVert.mPosition = myVert.mPosition + (normal * 1.01f);
+                //if (log) cout << "new pos: " << myVert.mPosition.x << ", " << myVert.mPosition.y << ", " << myVert.mPosition.z << endl;
+                posLength = sqrt(myVert.mPosition.x * myVert.mPosition.x + myVert.mPosition.y * myVert.mPosition.y + myVert.mPosition.z * myVert.mPosition.z);
+                //if (log) cout << "new pos dist to center: " << posLength << endl << endl;
+
+                mCloth->setVertAt(i * mNumCols + j, myVert);
+            } else {
+
+                myVert.mVelocity += myVert.mAcceleration * deltaTime;
+                myVert.mPosition += myVert.mVelocity * deltaTime;
+
+                //drag
+                int iterDiffI = 1;
+                int iterDiffJ = 1;
+                if (i == mNumRows - 1) iterDiffI = -1;
+                if (j == mNumCols - 1) iterDiffJ = -1;
+                auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mNumCols + j);
+                auto nextJVert = mCloth->getVertAt(i * mNumCols + j + iterDiffJ);
+                
+                myVert.mNormal = normalize(cross(nextJVert.mPosition - myVert.mPosition, nextIVert.mPosition - myVert.mPosition));
+                
+            }
+           /* if (i == 5 && j == 5) {
+                cout << "Vel: ";
+                cout << "(" << myVert.mVelocity.x << ", " << myVert.mVelocity.y << ", " << myVert.mVelocity.z << endl;
+                cout << "Pos: ";
+                cout << "(" << prevPos.x << ", " << prevPos.y << ", " << prevPos.z << ") - (";
+                cout << myVert.mPosition.x << ", " << myVert.mPosition.y << ", " << myVert.mPosition.z << ")" << endl;
+            }*/
+            mCloth->setVertAt(i * mNumCols + j, myVert);
+        }
+    }
+    //for (int i = 0; i < mNumRows; i++) {
+    //    for (int j = 0; j < mNumCols; j++) {
+    //        auto myVert = mCloth->getVertAt(i * mNumCols + j);
+    //        float posLength = sqrt(myVert.mPosition.x * myVert.mPosition.x + myVert.mPosition.y * myVert.mPosition.y + myVert.mPosition.z * myVert.mPosition.z);
+    //        if (posLength != 0.f && posLength < mSphereR * 1.01f) {
+    //            /*bool log = false;
+    //            if (i == (int)mNumRows / 2 && j == (int)mNumCols / 2) {
+    //                cout << "i = " << i << " j = " << j << endl << "orig pos dist to center: " << posLength << endl;
+    //                log = true;
+    //            }*/
+    //            //if (log) cout << "orig pos: " << myVert.mPosition.x << ", " << myVert.mPosition.y << ", " << myVert.mPosition.z << endl;
+    //            glm::vec3 normal = myVert.mPosition / posLength;
+    //            //if (log) cout << "normal: " << normal.x << ", " << normal.y << ", " << normal.z << endl;
+    //            float myDot = myVert.mVelocity.x * normal.x + myVert.mVelocity.y * normal.y + myVert.mVelocity.z * normal.z;
+    //            glm::vec3 bounce = normal * myDot;
+    //            //if (log) cout << "bounce: " << bounce.x << ", " << bounce.y << ", " << bounce.z << endl;
+
+    //            //if (log) cout << "orig vel: " << myVert.mVelocity.x << ", " << myVert.mVelocity.y << ", " << myVert.mVelocity.z << endl;
+    //            myVert.mVelocity = glm::vec3(0.f, 0.f, 0.f);//myVert.mVelocity - bounce * (1.f + mSphereBounceScale);
+    //            //if (log) cout << "new vel: " << myVert.mVelocity.x << ", " << myVert.mVelocity.y << ", " << myVert.mVelocity.z << endl;
+    //            myVert.mPosition = myVert.mPosition + (normal * 1.01f);
+    //            //if (log) cout << "new pos: " << myVert.mPosition.x << ", " << myVert.mPosition.y << ", " << myVert.mPosition.z << endl;
+    //            posLength = sqrt(myVert.mPosition.x * myVert.mPosition.x + myVert.mPosition.y * myVert.mPosition.y + myVert.mPosition.z * myVert.mPosition.z);
+    //            //if (log) cout << "new pos dist to center: " << posLength << endl << endl;
+
+    //            mCloth->setVertAt(i * mNumCols + j, myVert);
+    //        }
+
+    //    }
+    //}
+
 }
 
 void display() {
@@ -39,6 +291,11 @@ void display() {
     // render
     glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glPushMatrix();
+    glColor3f(1.0, 1.0, 1.0);
+    glutSolidSphere(mSphereR, 50, 50);
+    glPopMatrix();
 
     glUseProgram(mShaderProgram);
 
@@ -59,7 +316,9 @@ void display() {
     glUniformMatrix4fv(glGetUniformLocation(mShaderProgram, "model"), 1, GL_FALSE, &model[0][0]);
 
     if (mCloth) mCloth->draw();
-
+    //if (mSphere) mSphere->draw();
+    if (mBackground) mBackground->draw();
+    
     glutSwapBuffers();
 
     //FPS calculations
@@ -71,8 +330,11 @@ void display() {
         lastTimeSecond = deltaTime;
         framesSinceLast = 0;
         cout << "FPS: " << fps;
-        if (mCloth) cout << "\t Vertices: " << mCloth->getNumVerts();
-        cout << endl;
+        int totalVerts = 0;
+        cout << "\t Vertices: ";
+        if (mCloth) totalVerts += mCloth->getNumVerts();
+        if (mSphere) totalVerts += mSphere->getNumVerts();
+        cout << totalVerts << endl;
     }
 }
 
@@ -147,7 +409,7 @@ void reshape(GLsizei width, GLsizei height) {
 void animLoop(int val) {
     framesSinceLast += 1;
 
-    //TODO: update vertices
+    updateVerts();
 
     glutPostRedisplay();
     glutTimerFunc(16, animLoop, 1);
@@ -161,7 +423,9 @@ int main(int argc, char** argv) {
     initGL();
     glewInit();
     initShader();
-    initVerts();
+    initClothVerts();
+    initSphereVerts();
+    initBackgroundVerts();
 
     //start the animation after 5 seconds as a buffer
     glutTimerFunc(5, animLoop, 1);

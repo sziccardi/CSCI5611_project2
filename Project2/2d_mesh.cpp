@@ -14,7 +14,9 @@ void Mesh2D::draw() {
     glBindTexture(GL_TEXTURE_2D, mTexture);
 
     // draw mesh
-    glBindVertexArray(VAO);
+    glBindVertexArray(VAO);    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, mVerts.size() * sizeof(Vertex), &mVerts[0], GL_STATIC_DRAW);
     glDrawElements(GL_TRIANGLES, mIndices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
@@ -29,7 +31,17 @@ Vertex Mesh2D::getVertAt(int iter) {
 
 void Mesh2D::setVertAt(int iter, Vertex value) {
     if (iter < mVerts.size() && iter >= 0) {
-        mVerts[iter] = value;
+        auto prevPos = mVerts[iter].mPosition;
+        mVerts[iter].mAcceleration = value.mAcceleration;
+        mVerts[iter].mVelocity = value.mVelocity;
+        mVerts[iter].mNormal = value.mNormal;
+        mVerts[iter].mTexCoord = value.mTexCoord;
+        mVerts[iter].mPosition = value.mPosition;
+
+       /* if (iter == 65) {
+            cout << "(" << prevPos.x << ", " << prevPos.y << ", " << prevPos.z << ") - (";
+            cout << mVerts[iter].mPosition.x << ", " << mVerts[iter].mPosition.y << ", " << mVerts[iter].mPosition.z << ")" << endl;
+        }*/
     }
     else {
         cout << "YOU TRIED TO SET A VERT AT AN ITER THAT DOESN'T EXIST" << endl;
