@@ -55,6 +55,12 @@ float cameraSpeedScale = 100.f;
 float moveMult = 5.0f;
 float mouseSpeed = 0.0f;
 
+/* Input handlers */
+unsigned char keyStates[256] = { 0 };
+
+void keyPressed(unsigned char key, int x, int y);
+void keyUp(unsigned char key, int x, int y);
+void keyOperations(void);
 
 int mShaderProgram;
 const char* vertexShaderSource = "#version 330 core\n"

@@ -1,5 +1,84 @@
 #include "main.h"
 
+/*INPUTS*/
+void keyPressed(unsigned char key, int x, int y) {
+    keyStates[key] = true;
+}
+
+void keyUp(unsigned char key, int x, int y) {
+    keyStates[key] = false;
+}
+
+void keyOperations(void) {
+    float dCam = cameraSpeed * deltaTime;
+    //int ww = glutGet(GLUT_WINDOW_WIDTH);
+    //int wh = glutGet(GLUT_WINDOW_HEIGHT);
+
+    //OutputDebugStringA(cameraFront.toString().c_str());
+
+    float phi = atan2(-cameraFront.z, cameraFront.x);
+    float theta = atan2(sqrt(cameraFront.z * cameraFront.z + cameraFront.x * cameraFront.x), cameraFront.y);
+    float oldPhi = phi;
+    float oldTheta = theta;
+
+
+    if (keyStates['w']) { // If the 'a' key has been pressed  
+        //turn up
+        //in spherical, -- theta
+        theta -= dCam;
+    }
+
+    if (keyStates['a']) { // If the 'a' key has been pressed  
+        //turn left
+        //in spherical, ++ phi
+        phi += dCam;
+    }
+
+    if (keyStates['d']) { // If the 'a' key has been pressed  
+        //turn right
+        //in spherical, -- phi
+        phi -= dCam;
+    }
+
+    if (keyStates['s']) { // If the 'a' key has been pressed  
+        //turn down
+        //in spherical, ++ theta
+        //TODO: need a limit!?
+        theta += dCam;
+    }
+
+    float x = sin(theta) * cos(phi);
+    float z = -sin(theta) * sin(phi);
+    float y = cos(theta);
+
+    cameraFront.x = x;
+    cameraFront.y = y;
+    cameraFront.z = z;
+
+    cameraFront = normalize(cameraFront);// maybe not necessary
+
+    if (keyStates[' ']) {
+        cameraPos += cameraFront * dCam * cameraSpeedScale;
+    }
+
+    //cout << cameraPos.toString() << endl;
+}
+
+void mouse(int button, int state, int x, int y) {
+    // Wheel reports as button 3(scroll up) and button 4(scroll down)
+    if ((button == 3) || (button == 4)) { // It's a wheel event 
+        // Each wheel event reports like a button click, GLUT_DOWN then GLUT_UP
+        if (state == GLUT_UP) return; // Disregard redundant GLUT_UP events
+        printf("Scroll %s At %d %d\n", (button == 3) ? "Up" : "Down", x, y);
+    }
+    else {  // normal button event
+        // Mouse click, spawn particles
+        
+        //printf("Button %s At %d %d\n", (state == GLUT_DOWN) ? "Down" : "Up", x, y);
+    }
+}
+
+
 void initClothVerts() {
     if (mCloth) {
         auto c = mCloth;
@@ -407,6 +486,8 @@ void reshape(GLsizei width, GLsizei height) {
 }
 
 void animLoop(int val) {
+    keyOperations();
+
     framesSinceLast += 1;
 
     updateVerts();
@@ -425,7 +506,15 @@ int main(int argc, char** argv) {
     initShader();
     initClothVerts();
     initSphereVerts();
-    initBackgroundVerts();
+    initBackgroundVerts(); 
+    
+    /*interactions stuff*/
+    glutKeyboardFunc(keyPressed); // Tell GLUT to use the method "keyPressed" for key presses  
+    glutKeyboardUpFunc(keyUp); // Tell GLUT to use the method "keyUp" for key up events
+    //glutPassiveMotionFunc(mouseMovement);
+   // glutMotionFunc(mouseMovement);
+    //glutSetCursor(GLUT_CURSOR_NONE);
+    glutMouseFunc(mouse);
 
     //start the animation after 5 seconds as a buffer
     glutTimerFunc(5, animLoop, 1);
