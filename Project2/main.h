@@ -103,12 +103,15 @@ void initClothVerts();
 void updateVerts();
 
 /* Sphere things */
-float mSphereBounceScale = 0.00000f;
+float mSphereBounceScale = 0.01f;
 float mSphereR = 7;
 int mSphereNumVertSlices = 5;
 int mSphereNumHorizSlices = 5;
 Mesh2D* mSphere = nullptr;
 const char* mSphereTexture = "sphereTexture.png";
+glm::vec3 mSpherePos = glm::vec3(0.f, 0.f, 0.f);
+//float mFricMu = 50.5f;
+
 
 void initSphereVerts();
 
