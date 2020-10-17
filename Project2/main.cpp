@@ -73,11 +73,32 @@ void mouse(int button, int state, int x, int y) {
     }
     else {  // normal button event
         // Mouse click, spawn particles
-        
+        mMouseDown = (state == GLUT_DOWN);
+        mGhostSpherePosDiff = glm::vec3(0.f, 0.f, 0.f);
+        mMousePos = glm::vec2(-1.f, -1.f);
         //printf("Button %s At %d %d\n", (state == GLUT_DOWN) ? "Down" : "Up", x, y);
     }
 }
 
+void drag(int x, int y) {
+    if (mMouseDown) {
+        auto currentPos = glm::vec2(x, y);
+        if (!(mMousePos.x < 0 && mMousePos.y < 0)) {
+            auto diff = (mMousePos - currentPos);
+            mGhostSpherePosDiff = glm::vec3(diff.x, diff.y, 0.f) * 0.25f;
+            cout << "diff : " << diff.x * 0.25f << ", " << diff.y * 0.25f << endl;
+            mGhostSpherePos += mGhostSpherePosDiff;
+            /*int i = (int)mClothNumRows / 2;
+            int j = (int)mClothNumCols / 2;
+            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
+            myVert.mPosition += glm::vec3(diff.x, diff.y, 0.f) * 0.25f;
+            mCloth->setVertAt(i * mClothNumCols + j, myVert);
+            updateClothVerts();*/
+        }
+        mMousePos = currentPos;
+    } else {
+    }
+}
 
 void initClothVerts() {
     if (mCloth) {
@@ -88,20 +109,20 @@ void initClothVerts() {
 
     vector<Vertex> verts;
     vector<unsigned int> indices;
-    for (int y = 0; y < mNumRows; y++) {
-        for (int x = 0; x < mNumCols; x++) {
-            if (x < mNumCols - 1 && y < mNumRows - 1) {
-                indices.push_back(y * mNumCols + x);
-                indices.push_back(y * mNumCols + x + 1);
-                indices.push_back((y + 1) * mNumCols + x);
-                indices.push_back((y + 1) * mNumCols + x);
-                indices.push_back((y + 1) * mNumCols + x + 1);
-                indices.push_back(y * mNumCols + x + 1);
+    for (int y = 0; y < mClothNumRows; y++) {
+        for (int x = 0; x < mClothNumCols; x++) {
+            if (x < mClothNumCols - 1 && y < mClothNumRows - 1) {
+                indices.push_back(y * mClothNumCols + x);
+                indices.push_back(y * mClothNumCols + x + 1);
+                indices.push_back((y + 1) * mClothNumCols + x);
+                indices.push_back((y + 1) * mClothNumCols + x);
+                indices.push_back((y + 1) * mClothNumCols + x + 1);
+                indices.push_back(y * mClothNumCols + x + 1);
             }
 
-            glm::vec3 pos = glm::vec3(x * mSpringSize - mNumCols*mSpringSize/2.f, mStartHeight, y * mSpringSize - mNumRows * mSpringSize/2.f);
+            glm::vec3 pos = glm::vec3(x * mClothSpringSize - mClothNumCols*mClothSpringSize/2.f, mClothStartHeight, y * mClothSpringSize - mClothNumRows * mClothSpringSize/2.f);
             glm::vec3 norm = glm::vec3(0.f, 1.f, 0.f);
-            glm::vec2 tex = glm::vec2(1.f / mNumCols * x, 1.f / mNumRows * y);
+            glm::vec2 tex = glm::vec2(1.f / mClothNumCols * x, 1.f / mClothNumRows * y);
             glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
             glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
             verts.push_back(Vertex(pos, norm, tex, vel, acc));
@@ -109,6 +130,46 @@ void initClothVerts() {
     }
 
     mCloth = new Mesh2D(verts, indices, mClothTexture);
+}
+
+void initGhostSphereVerts() {
+    if (mGhostSphere) {
+        auto c = mGhostSphere;
+        delete(c);
+        mGhostSphere = nullptr;
+    }
+
+    vector<Vertex> verts;
+    vector<unsigned int> indices;
+
+    float dTheta = 2 * M_PI / mGhostSphereNumVertSlices;
+    float dPhi = M_PI / mGhostSphereNumHorizSlices;
+    for (int i = 0; i < mGhostSphereNumVertSlices; i++) {
+        for (int j = 0; j < mGhostSphereNumHorizSlices; j++) {
+            float x = mGhostSphereR * sin(dTheta * i) * cos(dPhi * j);
+            float z = -mGhostSphereR * sin(dTheta * i) * sin(dPhi * j);
+            float y = mGhostSphereR * cos(dTheta * i);
+
+            if (i < mGhostSphereNumVertSlices - 1 && j < mGhostSphereNumHorizSlices - 1) {
+                indices.push_back(j * mGhostSphereNumVertSlices + i);
+                indices.push_back(j * mGhostSphereNumVertSlices + i + 1);
+                indices.push_back((j + 1) * mGhostSphereNumVertSlices + i);
+                indices.push_back((j + 1) * mGhostSphereNumVertSlices + i);
+                indices.push_back((j + 1) * mGhostSphereNumVertSlices + i + 1);
+                indices.push_back(j * mGhostSphereNumVertSlices + i + 1);
+            }
+
+            glm::vec3 pos = glm::vec3(x, y, z);
+            glm::vec3 norm = glm::vec3(0.f, 1.f, 0.f);
+            glm::vec2 tex = glm::vec2(1.f / mClothNumCols * i, 1.f / mClothNumRows * j);
+            glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
+            glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
+            verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+        }
+    }
+
+    mGhostSphere = new Mesh2D(verts, indices, mGhostSphereTexture);
 }
 
 void initBackgroundVerts() {
@@ -154,36 +215,194 @@ void initBackgroundVerts() {
     mBackground = new Mesh2D(verts, indices, mBackgroundTexture);
 }
 
-void initSphereVerts() {
-    if (mSphere) {
-        auto c = mSphere;
+void initJellyVerts() {
+    if (mJelly) {
+        auto c = mJelly;
         delete(c);
-        mSphere = nullptr;
+        mJelly = nullptr;
+    }
+
+    vector<Vertex> verts;
+    for (int x = 0; x < mJellyNumSprings; x++) {
+        for (int y = 0; y < mJellyNumSprings; y++) {
+            for (int z = 0; z < mJellyNumSprings; z++) {
+                glm::vec3 pos = glm::vec3(x * mJellySpringSize - mJellySpringSize / 2, y * mJellySpringSize - mJellySpringSize / 2, z * mJellySpringSize - mJellySpringSize / 2);
+                glm::vec3 norm = glm::vec3(0.f, 1.f, 0.f);
+                //only texture the edges
+                //middle bits have tex coords (-1,-1)
+                //based on this picture below (X's show where the box is 'unrolled' with texture tiled
+                /*
+                     ___ ___ ___ ___
+                    |___|_5_|___|___|
+                    |_1_|_2_|_3_|_4_|
+                    |___|_6_|___|___|
+                
+                */
+                glm::vec2 tex = glm::vec2(-1.f, -1.f);
+                //(1)
+                if (x == 0 && z != 0 && y != mJellyNumSprings && z != mJellyNumSprings) {
+                    tex = glm::vec2(1.f / mJellyNumSprings * y, 1.f / mJellyNumSprings * z + 1.f);
+                } 
+                //(2)
+                else if (y == 0 && z != 0 && x != mJellyNumSprings && z != mJellyNumSprings) {
+                    tex = glm::vec2(1.f / mJellyNumSprings * x + 1.f, 1.f / mJellyNumSprings * z + 1.f);
+                } 
+                //(3)
+                else if (x == mJellyNumSprings && y != mJellyNumSprings && z != mJellyNumSprings) {
+                    tex = glm::vec2(1.f / mJellyNumSprings * y + 2.f, 1.f / mJellyNumSprings * z + 1.f);
+                }
+                //(4)
+                else if (y == mJellyNumSprings && x != mJellyNumSprings) {
+                    tex = glm::vec2(1.f / mJellyNumSprings * x + 3.f, 1.f / mJellyNumSprings * z + 1.f);
+                }
+                //(5)
+                else if (z == 0 && y != mJellyNumSprings) {
+                    tex = glm::vec2(1.f / mJellyNumSprings * x + 1.f, 1.f / mJellyNumSprings * y);
+                } 
+                //(6)
+                else if (z == mJellyNumSprings && y != 0 && x != mJellyNumSprings) {
+                    tex = glm::vec2(1.f / mJellyNumSprings * x + 1.f, 1.f / mJellyNumSprings * y + 2.f);
+                }
+                glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
+                glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
+                verts.push_back(Vertex(pos, norm, tex, vel, acc));
+            }
+        }
+    }
+
+    vector<unsigned int> indices;
+    //left
+    int z = 0;
+    int y = 0;
+    int x = 0;
+    for (y = 0; y < mJellyNumSprings; y++) {
+        for (z = 0; z < mJellyNumSprings; z++) {
+            if (z < mJellyNumSprings - 1 && y < mJellyNumSprings - 1) {
+                indices.push_back((y + 1) * mJellyNumSprings + z);
+                indices.push_back((y + 1) * mJellyNumSprings + z + 1);
+                indices.push_back(y * mJellyNumSprings + z);
+                indices.push_back(y * mJellyNumSprings + z);
+                indices.push_back(y * mJellyNumSprings + z + 1);
+                indices.push_back((y + 1) * mJellyNumSprings + z + 1);
+            }
+        }
+    }
+    //front
+    z = 0;
+    y = 0;
+    x = 0;
+    for (x = 0; x < mJellyNumSprings; x++) {
+        for (y = 0; y < mJellyNumSprings; y++) {
+            if (x < mJellyNumSprings - 1 && y < mJellyNumSprings - 1) {
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + y * mJellyNumSprings + z);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + y * mJellyNumSprings);
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + (y + 1) * mJellyNumSprings);
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + (y + 1) * mJellyNumSprings);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + (y + 1) * mJellyNumSprings);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + y * mJellyNumSprings);
+            }
+        }
+    }
+    //right
+    z = 0;
+    y = 0;
+    x = mJellyNumSprings;
+    for (y = 0; y < mJellyNumSprings; y++) {
+        for (z = 0; z < mJellyNumSprings; z++) {
+            if (z < mJellyNumSprings - 1 && y < mJellyNumSprings - 1) {
+                indices.push_back(y * mJellyNumSprings + z);
+                indices.push_back(y * mJellyNumSprings + z + 1);
+                indices.push_back((y + 1) * mJellyNumSprings + z);
+                indices.push_back((y + 1) * mJellyNumSprings + z);
+                indices.push_back((y + 1) * mJellyNumSprings + z + 1);
+                indices.push_back(y * mJellyNumSprings + z + 1);
+            }
+        }
+    }    
+    //back
+    z = mJellyNumSprings;
+    y = 0;
+    x = 0;
+    for (x = 0; x < mJellyNumSprings; x++) {
+        for (y = 0; y < mJellyNumSprings; y++) {
+            if (x < mJellyNumSprings - 1 && y < mJellyNumSprings - 1) {
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + y * mJellyNumSprings + z);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + y * mJellyNumSprings);
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + (y + 1) * mJellyNumSprings);
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + (y + 1) * mJellyNumSprings);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + (y + 1) * mJellyNumSprings);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + y * mJellyNumSprings);
+            }
+        }
+    }
+    //top
+    z = 0;
+    y = mJellyNumSprings;
+    x = 0;
+    for (x = 0; x < mJellyNumSprings; x++) {
+        for (z = 0; z < mJellyNumSprings; z++) {
+            if (x < mJellyNumSprings - 1 && z < mJellyNumSprings - 1) {
+                //(x, z + 1) -> (x + 1, z + 1) -> (x, z) -> (x, z) -> (x + 1, z) -> (x + 1, z + 1)
+
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + z + 1);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + z + 1);
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + z);
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + z + 1);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + z);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + z + 1);
+            }
+        }
+    }
+    //bottom
+    z = 0;
+    y = 0;
+    x = 0;
+    for (x = 0; x < mJellyNumSprings; x++) {
+        for (z = 0; z < mJellyNumSprings; z++) {
+            if (x < mJellyNumSprings - 1 && z < mJellyNumSprings - 1) {
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + z);
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + z);
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + (z + 1));
+                indices.push_back(x * mJellyNumSprings * mJellyNumSprings + (z + 1));
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + (z + 1));
+                indices.push_back((x + 1) * mJellyNumSprings * mJellyNumSprings + z);
+            }
+        }
+    }
+
+    mJelly = new Mesh2D(verts, indices, mJellyTexture);
+}
+
+void initPumpkinVerts() {
+    if (mPumpkin) {
+        auto c = mPumpkin;
+        delete(c);
+        mPumpkin = nullptr;
     }
 
     vector<Vertex> verts;
     vector<unsigned int> indices;
 
-    float dTheta = 2 * M_PI / mSphereNumVertSlices;
-    float dPhi = M_PI / mSphereNumHorizSlices;
-    for (int i = 0; i < mSphereNumVertSlices; i++) {
-        for (int j = 0; j < mSphereNumHorizSlices; j++) {
-            float x = mSphereR * sin(dTheta * i) * cos(dPhi * j);
-            float z = -mSphereR * sin(dTheta * i) * sin(dPhi * j);
-            float y = mSphereR * cos(dTheta * i);
+    float dTheta = 2 * M_PI / mPumpkinNumVertSlices;
+    float dPhi = M_PI / mPumpkinNumHorizSlices;
+    for (int i = 0; i < mPumpkinNumVertSlices; i++) {
+        for (int j = 0; j < mPumpkinNumHorizSlices; j++) {
+            float x = mPumpkinR * sin(dTheta * i) * cos(dPhi * j);
+            float z = -mPumpkinR * sin(dTheta * i) * sin(dPhi * j);
+            float y = mPumpkinR * cos(dTheta * i);
 
-            if (i < mSphereNumVertSlices - 1 && j < mSphereNumHorizSlices - 1) {
-                indices.push_back(j * mSphereNumVertSlices + i);
-                indices.push_back(j * mSphereNumVertSlices + i + 1);
-                indices.push_back((j + 1) * mSphereNumVertSlices + i);
-                indices.push_back((j + 1) * mSphereNumVertSlices + i);
-                indices.push_back((j + 1) * mSphereNumVertSlices + i + 1);
-                indices.push_back(j * mSphereNumVertSlices + i + 1);
+            if (i < mPumpkinNumVertSlices - 1 && j < mPumpkinNumHorizSlices - 1) {
+                indices.push_back(j * mPumpkinNumVertSlices + i);
+                indices.push_back(j * mPumpkinNumVertSlices + i + 1);
+                indices.push_back((j + 1) * mPumpkinNumVertSlices + i);
+                indices.push_back((j + 1) * mPumpkinNumVertSlices + i);
+                indices.push_back((j + 1) * mPumpkinNumVertSlices + i + 1);
+                indices.push_back(j * mPumpkinNumVertSlices + i + 1);
             }
 
-            glm::vec3 pos = glm::vec3(x, y, z);
+            glm::vec3 pos = glm::vec3(x, y, z) + mPumpkinPos;
             glm::vec3 norm = glm::vec3(0.f, 1.f, 0.f);
-            glm::vec2 tex = glm::vec2(1.f / mNumCols * i, 1.f / mNumRows * j);
+            glm::vec2 tex = glm::vec2(1.f / mClothNumCols * i, 1.f / mClothNumRows * j);
             glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
             glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
             verts.push_back(Vertex(pos, norm, tex, vel, acc));
@@ -191,22 +410,147 @@ void initSphereVerts() {
         }
     }
 
-    mSphere = new Mesh2D(verts, indices, mSphereTexture);
+    mPumpkin = new Mesh2D(verts, indices, mPumpkinTexture);
 }
 
-void updateVerts() {
+
+void updateJellyVerts() {
+    for (int i = 0; i < mJellyNumSprings; i++) {
+        for (int j = 0; j < mJellyNumSprings; j++) {
+            for (int k = 0; k < mJellyNumSprings; k++) {
+                auto myVert = (i * mJellyNumSprings * mJellyNumSprings + j * mJellyNumSprings + k);
+                mJelly->getVertAt(myVert).mAcceleration = mGravity;
+                
+                int iterDiffI = 1;
+                int iterDiffJ = 1;
+                int iterDiffK = 1;
+                if (i == mJellyNumSprings - 1) iterDiffI = -1;
+                if (j == mJellyNumSprings - 1) iterDiffJ = -1;
+                if (k == mJellyNumSprings - 1) iterDiffK = -1;
+                auto nextIVert = ((i + iterDiffI) * mJellyNumSprings * mJellyNumSprings + j * mJellyNumSprings + k);
+                auto nextJVert = (i * mJellyNumSprings * mJellyNumSprings + (j + iterDiffJ) * mJellyNumSprings + k);
+                auto nextKVert = (i * mJellyNumSprings * mJellyNumSprings + j * mJellyNumSprings + k + iterDiffK);
+                if (i != (mJellyNumSprings - 1)) {
+                    updateAccJellyVerts(myVert, nextIVert, mJellySpringSize);
+                }
+                if (j != (mJellyNumSprings - 1)) {
+                    updateAccJellyVerts(myVert, nextJVert, mJellySpringSize);
+                }
+                if (k != (mJellyNumSprings - 1)) {
+                    updateAccJellyVerts(myVert, nextKVert, mJellySpringSize);
+                }
+            }
+        }
+    }
+
+    float diagRestLen = sqrt(2) * restLen;
+    for (int i = 0; i < mJellyNumSprings; i++) {
+        for (int j = 0; j < mJellyNumSprings; j++) {
+            updateAccJellyVerts(i * mJellyNumSprings * mJellyNumSprings + j, i * mJellyNumSprings * mJellyNumSprings + mJellyNumSprings + j ^ 1, diagRestLen);
+            updateAccJellyVerts(i * mJellyNumSprings + j, mJellyNumSprings * mJellyNumSprings + i * mJellyNumSprings + j ^ 1, diagRestLen);
+            updateAccJellyVerts(j * mJellyNumSprings + i, mJellyNumSprings * mJellyNumSprings + j ^ 1 * mJellyNumSprings + i, diagRestLen);
+        }
+    }
+
+    //collision 
+    auto myVert = (mJellyNumSprings * mJellyNumSprings * (mJellyNumSprings / 2) + mJellyNumSprings * mJellyNumSprings + (mJellyNumSprings / 2));
+    if (mPumpkinPos.y < mJelly->getVertAt(myVert).mPosition.y) {
+        glm::vec3 v1 = mJelly->getVertAt(1).mPosition - mJelly->getVertAt(0).mPosition;
+        glm::vec3 v2 = mJelly->getVertAt(mJellyNumSprings * mJellyNumSprings).mPosition - mJelly->getVertAt(0).mPosition;
+        glm::vec3 N = normalize(cross(v1, v2)); //normal
+        glm::vec3 dx = (N * ((diffDist + 0.01f)));
+        mPumpkinPos -= dx;
+        glm::vec3 velProj = N*(dot(mPumpkin->getVertAt(0).mVelocity, N));
+        glm::vec3 dv = (velProj * (1 + mPumpkinCOR));
+
+        for (int theta = 0; theta < mPumpkinNumVertSlices; theta++) {
+            for (int phi = 0; phi < mPumpkinNumHorizSlices; phi++) {
+                auto theVert = mPumpkin->getVertAt(theta * mPumpkinNumHorizSlices + phi);
+                theVert.mPosition -= dx;
+                theVert.mVelocity -= dv;
+            }
+        }
+
+
+        float fact = ((rand() % 10) / 20.f + 0.6) * COR2;
+        for (int i = 0; i < mJellyNumSprings; i++) {
+            for (int k = 0; k < mJellyNumSprings; k++) {
+                auto theVert = mPumpkin->getVertAt(i * mJellyNumSprings * mJellyNumSprings + k);
+                theVert.mVelocity += (velProj * (fact));
+                //vel[i][1][k].add(velProj.times(COR2/2));
+            }
+        }
+    }
+
+    //mid-point integration
+    for (int theta = 0; theta < mPumpkinNumVertSlices; theta++) {
+        for (int phi = 0; phi < mPumpkinNumHorizSlices; phi++) {
+            auto theVert = mPumpkin->getVertAt(theta * mPumpkinNumHorizSlices + phi);
+            theVert.mVelocity += (mGravity * (deltaTime / 2));
+            theVert.mPosition += (theVert.mVelocity * (deltaTime));
+            theVert.mVelocity += (mGravity * (deltaTime / 2));
+        }
+    }
+
+    
+
+    mPumpkinAngle += mPumpkinAngle * deltaTime;
+
+    for (int i = 0; i < mJellyNumSprings; i++) {
+        for (int j = 0; j < mJellyNumSprings; j++) {
+            for (int k = 0; k < mJellyNumSprings; k++) {
+                auto myVert = mPumpkin->getVertAt(i * mJellyNumSprings * mJellyNumSprings + j * mJellyNumSprings + k);
+
+                float tmp = myVert.mPosition.y;
+                myVert.mVelocity += (myVert.mAcceleration * (deltaTime / 2));
+                myVert.mPosition += (myVert.mVelocity * (deltaTime));
+                myVert.mVelocity += (myVert.mAcceleration * (deltaTime / 2));
+                if (j == (mJellyNumSprings - 1)) {
+                    myVert.mPosition.y = min(myVert.mPosition.y, tmp);
+                }
+                if (i == 0 && j == 0 && k == 0) {
+                    mMaxY = max(mMaxY, myVert.mPosition.y);
+                    //println(maxY);
+                }
+            }
+        }
+    }
+}
+
+void updateAccJellyVerts(int origIter, int nextIter, float restLen) {
+    auto myVert = mJelly->getVertAt(origIter);
+    auto nextVert = mJelly->getVertAt(nextIter);
+
+    glm::vec3 diff = nextVert.mPosition - myVert.mPosition;
+    float stringF = -k * (diff.length() - restLen);
+
+    glm::vec3 stringDir = normalize(diff);
+    float projVbot = dot(myVert.mVelocity, stringDir);
+    float projVtop = dot(nextVert.mVelocity, stringDir);
+    float dampF = -kv * (projVtop - projVbot);
+
+    glm::vec3 force = stringDir * (stringF + dampF);
+
+    myVert.mAcceleration += (force * (-1.0f / mass));
+    nextVert.mAcceleration += (force * (1.0f / mass));
+
+    mJelly->setVertAt(origIter, myVert);
+    mJelly->setVertAt(nextIter, nextVert);
+}
+
+void updateClothVerts() {
     //Reset accelerations each timestep (momentum only applies to velocity)
-    for (int i = 0; i < mNumRows; i++) {
-        for (int j = 0; j < mNumCols; j++) {
-            auto myVert = mCloth->getVertAt(i * mNumCols + j);
+    for (int i = 0; i < mClothNumRows; i++) {
+        for (int j = 0; j < mClothNumCols; j++) {
+            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
             myVert.mAcceleration = mGravity;//glm::vec3(0.f, 0.f, 0.f);
             //drag
             int iterDiffI = 1;
             int iterDiffJ = 1;
-            if (i == mNumRows - 1) iterDiffI = -1;
-            if (j == mNumCols - 1) iterDiffJ = -1;
-            auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mNumCols + j);
-            auto nextJVert = mCloth->getVertAt(i * mNumCols + j + iterDiffJ);
+            if (i == mClothNumRows - 1) iterDiffI = -1;
+            if (j == mClothNumCols - 1) iterDiffJ = -1;
+            auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mClothNumCols + j);
+            auto nextJVert = mCloth->getVertAt(i * mClothNumCols + j + iterDiffJ);
             glm::vec3 averageVel = (nextIVert.mVelocity + nextJVert.mVelocity + myVert.mVelocity) / 3.f;
             glm::vec3 normal = normalize(cross(nextJVert.mPosition - myVert.mPosition, nextIVert.mPosition - myVert.mPosition));
             float area = 0.5f * length(cross((nextJVert.mPosition - myVert.mPosition), (nextIVert.mPosition - myVert.mPosition)));
@@ -214,7 +558,7 @@ void updateVerts() {
             else {
                 area *= (dot(averageVel, normal) / length(averageVel));
             }
-            glm::vec3 drag = normal * (1.f / 6.f) * mKf * length(averageVel) * length(averageVel) * area;
+            glm::vec3 drag = normal * (1.f / 6.f) * mClothKf * length(averageVel) * length(averageVel) * area;
             myVert.mAcceleration -= drag;
             
             /*auto diff = myVert.mPosition - mSpherePos;
@@ -226,102 +570,103 @@ void updateVerts() {
                 myVert.mAcceleration += velNorm * fricForce;
             }*/
 
-            mCloth->setVertAt(i * mNumCols + j, myVert);
+            mCloth->setVertAt(i * mClothNumCols + j, myVert);
         }
     }
 
     //Compute (damped) Hooke's law for each spring
-    for (int i = 0; i < mNumRows; i++) {
-        for (int j = 0; j < mNumCols; j++) {
-            auto myVert = mCloth->getVertAt(i * mNumCols + j);
+    for (int i = 0; i < mClothNumRows; i++) {
+        for (int j = 0; j < mClothNumCols; j++) {
+            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
             
-            if (i != mNumRows - 1) {
-                auto nextVert = mCloth->getVertAt((i + 1) * mNumCols + j);
+            if (i != mClothNumRows - 1) {
+                auto nextVert = mCloth->getVertAt((i + 1) * mClothNumCols + j);
                 glm::vec3 diff = nextVert.mPosition - myVert.mPosition;
                 float diffLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-                float stringF = -mK * (diffLength - mSpringSize);
+                float stringF = -mClothK * (diffLength - mClothSpringSize);
                 //println(stringF,diff.length(),restLen);
 
                 glm::vec3 stringDir = normalize(diff);
                 float projVbot = dot(myVert.mVelocity, stringDir);
                 float projVtop = dot(nextVert.mVelocity, stringDir);
-                float dampF = -mKv * (projVtop - projVbot);
+                float dampF = -mClothKv * (projVtop - projVbot);
 
                 //Vec2 frictionF = vel[i].times(-kf);
 
                 glm::vec3 force = stringDir*(stringF + dampF);
                 //force.add(frictionF);
-                myVert.mAcceleration += (force*(-1.0f / mMass));
-                nextVert.mAcceleration += (force*(1.f / mMass));
+                myVert.mAcceleration += (force*(-1.0f / mClothMass));
+                nextVert.mAcceleration += (force*(1.f / mClothMass));
 
 
-                mCloth->setVertAt(i * mNumCols + j, myVert); //mine
-                mCloth->setVertAt((i + 1) * mNumCols + j, nextVert); //down
+                mCloth->setVertAt(i * mClothNumCols + j, myVert); //mine
+                mCloth->setVertAt((i + 1) * mClothNumCols + j, nextVert); //down
             }
 
-            if (j != mNumCols - 1) {
-                auto nextVert = mCloth->getVertAt(i * mNumCols + j + 1);
+            if (j != mClothNumCols - 1) {
+                auto nextVert = mCloth->getVertAt(i * mClothNumCols + j + 1);
                 glm::vec3 diff = nextVert.mPosition - myVert.mPosition;
                 float diffLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-                float stringF = -mK * (diffLength - mSpringSize);
+                float stringF = -mClothK * (diffLength - mClothSpringSize);
                 //println(stringF,diff.length(),restLen);
 
                 glm::vec3 stringDir = normalize(diff);
                 float projVbot = dot(myVert.mVelocity, stringDir);
                 float projVtop = dot(nextVert.mVelocity, stringDir);
-                float dampF = -mKv * (projVtop - projVbot);
+                float dampF = -mClothKv * (projVtop - projVbot);
 
                 //Vec2 frictionF = vel[i].times(-kf);
 
                 glm::vec3 force = stringDir * (stringF + dampF);
                 //force.add(frictionF);
-                myVert.mAcceleration += (force * (-1.0f / mMass));
-                nextVert.mAcceleration += (force * (1.f / mMass));
+                myVert.mAcceleration += (force * (-1.0f / mClothMass));
+                nextVert.mAcceleration += (force * (1.f / mClothMass));
 
 
-                mCloth->setVertAt(i * mNumCols + j, myVert); //mine
-                mCloth->setVertAt(i * mNumCols + j + 1, nextVert); //right
+                mCloth->setVertAt(i * mClothNumCols + j, myVert); //mine
+                mCloth->setVertAt(i * mClothNumCols + j + 1, nextVert); //right
             }
         }
     }
 
     //Eulerian integration
-    for (int i = 0; i < mNumRows; i++) {
-        for (int j = 0; j < mNumCols; j++) {
-            auto myVert = mCloth->getVertAt(i * mNumCols + j);
+    for (int i = 0; i < mClothNumRows; i++) {
+        for (int j = 0; j < mClothNumCols; j++) {
+            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
 
             int iterDiffI = 1;
             int iterDiffJ = 1;
-            if (i == mNumRows - 1) iterDiffI = -1;
-            if (j == mNumCols - 1) iterDiffJ = -1;
-            auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mNumCols + j);
-            auto nextJVert = mCloth->getVertAt(i * mNumCols + j + iterDiffJ);
+            if (i == mClothNumRows - 1) iterDiffI = -1;
+            if (j == mClothNumCols - 1) iterDiffJ = -1;
+            auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mClothNumCols + j);
+            auto nextJVert = mCloth->getVertAt(i * mClothNumCols + j + iterDiffJ);
 
             auto dV = myVert.mAcceleration * deltaTime;
-
             myVert.mVelocity += dV;
             auto dX = myVert.mVelocity * deltaTime;
             myVert.mPosition += dX;
 
             myVert.mNormal = normalize(cross(nextJVert.mPosition - myVert.mPosition, nextIVert.mPosition - myVert.mPosition));
 
-            auto diff = myVert.mPosition - mSpherePos;
+            auto diff = myVert.mPosition - mGhostSpherePos;
             float posLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-            if (posLength != 0.f && posLength < mSphereR) {
+            if (posLength != 0.f && posLength < mGhostSphereR) {
                 glm::vec3 normal = diff / posLength;
                 
                 float myDot = myVert.mVelocity.x * normal.x + myVert.mVelocity.y * normal.y + myVert.mVelocity.z * normal.z;
                 glm::vec3 bounce = normal * myDot;
                 //pin the top if its on the ball so the cloth doesnt fall off
-                if (i == (int)mNumRows / 2 && j == (int)mNumCols / 2) {
+                if (i == (int)mClothNumRows / 2 && j == (int)mClothNumCols / 2) {
                     myVert.mVelocity -= dV;
                     myVert.mPosition -= dX;
                 } else {
-                    myVert.mVelocity = myVert.mVelocity - bounce * (1.f + mSphereBounceScale);
-                    myVert.mPosition = normal * mSphereR * 1.0000001f + mSpherePos;
+                    myVert.mVelocity = myVert.mVelocity - bounce * (1.f + mGhostSphereBounceScale);
+                    myVert.mPosition = normal * mGhostSphereR * 1.0000001f + mGhostSpherePos;
                 }
+
+                myVert.mPosition += mGhostSpherePosDiff;
             } 
-            mCloth->setVertAt(i * mNumCols + j, myVert);
+            mCloth->setVertAt(i * mClothNumCols + j, myVert);
         }
     }
 }
@@ -358,7 +703,9 @@ void display() {
 
     if (mCloth) mCloth->draw();
     //if (mSphere) mSphere->draw();
-    if (mBackground) mBackground->draw();
+    //if (mBackground) mBackground->draw();
+    if (mPumpkin) mPumpkin->draw();
+    if (mJelly) mJelly->draw();
     
     glutSwapBuffers();
 
@@ -374,7 +721,7 @@ void display() {
         int totalVerts = 0;
         cout << "\t Vertices: ";
         if (mCloth) totalVerts += mCloth->getNumVerts();
-        if (mSphere) totalVerts += mSphere->getNumVerts();
+        if (mGhostSphere) totalVerts += mGhostSphere->getNumVerts();
         cout << totalVerts << endl;
     }
 }
@@ -452,7 +799,8 @@ void animLoop(int val) {
 
     framesSinceLast += 1;
 
-    updateVerts();
+    updateClothVerts();
+    //updateJellyVerts();
 
     glutPostRedisplay();
     glutTimerFunc(16, animLoop, 1);
@@ -466,14 +814,18 @@ int main(int argc, char** argv) {
     initGL();
     glewInit();
     initShader();
+    
+    //initPumpkinVerts();
+    //initJellyVerts();
     initClothVerts();
-    initSphereVerts();
+    initGhostSphereVerts();
     initBackgroundVerts(); 
     
     /*interactions stuff*/
     glutKeyboardFunc(keyPressed); // Tell GLUT to use the method "keyPressed" for key presses  
     glutKeyboardUpFunc(keyUp); // Tell GLUT to use the method "keyUp" for key up events
     glutMouseFunc(mouse);
+    glutMotionFunc(drag);
 
     //start the animation after 5 seconds as a buffer
     glutTimerFunc(5, animLoop, 1);
