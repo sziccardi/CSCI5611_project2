@@ -37,13 +37,14 @@ using namespace std::chrono;
 int framesSinceLast = 0;
 long lastTimeSecond = 0;
 float previousFrame = 0.0f;
-float deltaTime = 0.01667f;
+float deltaTime = 0.004f;
 
 
 /* Camera things*/
 glm::vec3 cameraPos = glm::vec3(0.0f, 25.0f, -80.0f);
 glm::vec3 cameraFront = glm::vec3(0.f, -1.0f, 3.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 3.0f, 1.0f);
+glm::vec3 cameraRight = glm::vec3(3.0f, 0.0f, 0.0f);
 glm::vec2 mouseAngles = glm::vec2(0, 0);
 
 float horizontal = 3.14f;
@@ -102,7 +103,7 @@ float mClothSpringSize = 2.f; //rest length
 glm::vec3 mGravity = glm::vec3(0, -5.f, 0);
 float mClothMass = 1; 
 float mClothK = 550; 
-float mClothKv = 11.5; 
+float mClothKv = 31.5; 
 float mClothKf = 0.6;
 
 void initClothVerts();
@@ -117,13 +118,14 @@ Mesh2D* mGhostSphere = nullptr;
 const char* mGhostSphereTexture = "sphereTexture.png";
 glm::vec3 mGhostSpherePos = glm::vec3(0.f, 0.f, 0.f);
 glm::vec3 mGhostSpherePosDiff = glm::vec3(0.f, 0.f, 0.f);
+float mMaxDiff = 0.1f;
 
 void initGhostSphereVerts();
 
 /* Background things */
 Mesh2D* mBackground = nullptr;
-const char* mBackgroundTexture = "backgroundTexture.jpg";
-float mBackHeight = 312.5f;
+const char* mBackgroundTexture = "backgroundTexture2.png";
+float mBackHeight = 500.f;
 float mBackWidth = 500.f;
 
 void initBackgroundVerts();

@@ -47,15 +47,37 @@ void keyOperations(void) {
         theta += dCam;
     }
 
-    float x = sin(theta) * cos(phi);
-    float z = -sin(theta) * sin(phi);
-    float y = cos(theta);
+    float xFront = sin(theta) * cos(phi);
+    float zFront = -sin(theta) * sin(phi);
+    float yFront = cos(theta);
 
-    cameraFront.x = x;
-    cameraFront.y = y;
-    cameraFront.z = z;
+    cameraFront.x = xFront;
+    cameraFront.y = yFront;
+    cameraFront.z = zFront;
 
     cameraFront = normalize(cameraFront);// maybe not necessary
+
+    //up is phi + M_PI / 2
+    float xUp = sin(theta - M_PI / 2) * cos(phi);
+    float zUp = -sin(theta - M_PI / 2) * sin(phi);
+    float yUp = cos(theta - M_PI / 2);
+
+    cameraUp.x = xUp;
+    cameraUp.y = yUp;
+    cameraUp.z = zUp;
+
+    cameraUp = normalize(cameraUp);// maybe not necessary
+
+    //right is theta + M_PI / 2
+    float xRight = sin(theta) * cos(phi + M_PI / 2);
+    float zRight = -sin(theta) * sin(phi + M_PI / 2);
+    float yRight = cos(theta);
+
+    cameraRight.x = xRight;
+    cameraRight.y = yRight;
+    cameraRight.z = zRight;
+
+    cameraRight = normalize(cameraRight);// maybe not necessary
 
     if (keyStates[' ']) {
         cameraPos += cameraFront * dCam * cameraSpeedScale;
@@ -82,22 +104,22 @@ void mouse(int button, int state, int x, int y) {
 
 void drag(int x, int y) {
     if (mMouseDown) {
-        auto currentPos = glm::vec2(x, y);
+        auto screenPos = glm::vec2(x, y) - mMousePos;//glm::vec2(x / (float)glutGet(GLUT_WINDOW_WIDTH), y / (float)glutGet(GLUT_WINDOW_HEIGHT));
         if (!(mMousePos.x < 0 && mMousePos.y < 0)) {
-            auto diff = (mMousePos - currentPos);
-            mGhostSpherePosDiff = glm::vec3(diff.x, diff.y, 0.f) * 0.25f;
-            cout << "diff : " << diff.x * 0.25f << ", " << diff.y * 0.25f << endl;
+            auto n = cameraFront;
+            auto a = cameraRight;
+            auto b = cameraUp;
+            auto newPos = mGhostSpherePos + screenPos.x * a  + screenPos.y * b;
+            glm::vec3 diff = mGhostSpherePos - newPos;
+            if (length(diff) > mMaxDiff) {
+                diff = normalize(diff) * mMaxDiff;
+            }
+            //cout << "diff : " << diff.x * 0.25f << ", " << diff.y * 0.25f << endl;
+            mGhostSpherePosDiff = diff; 
             mGhostSpherePos += mGhostSpherePosDiff;
-            /*int i = (int)mClothNumRows / 2;
-            int j = (int)mClothNumCols / 2;
-            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
-            myVert.mPosition += glm::vec3(diff.x, diff.y, 0.f) * 0.25f;
-            mCloth->setVertAt(i * mClothNumCols + j, myVert);
-            updateClothVerts();*/
         }
-        mMousePos = currentPos;
-    } else {
-    }
+        mMousePos += screenPos;
+    } 
 }
 
 void initClothVerts() {
@@ -180,37 +202,66 @@ void initBackgroundVerts() {
     }
 
     vector<Vertex> verts;
-    glm::vec3 pos = glm::vec3(-mBackWidth / 2, -mBackHeight / 2, 100.f);
+    glm::vec3 pos = glm::vec3(-mBackWidth / 2, -mBackHeight / 2, mBackHeight / 2);
     glm::vec3 norm = glm::vec3(0.f, 0.f, -1.f);
     glm::vec2 tex = glm::vec2(0.f, 1.f);
     glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
     glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
     verts.push_back(Vertex(pos, norm, tex, vel, acc));
 
-    pos = glm::vec3(mBackWidth / 2, -mBackHeight / 2, 100.f);
+    pos = glm::vec3(mBackWidth / 2, -mBackHeight / 2, mBackHeight / 2);
     norm = glm::vec3(0.f, 0.f, -1.f);
     tex = glm::vec2(1.f, 1.f);
     vel = glm::vec3(0.f, 0.f, 0.f);
     acc = glm::vec3(0.f, 0.f, 0.f);
     verts.push_back(Vertex(pos, norm, tex, vel, acc));
 
-    pos = glm::vec3(mBackWidth / 2, mBackHeight / 2, 100.f);
+    pos = glm::vec3(mBackWidth / 2, mBackHeight / 2, mBackHeight / 2);
     norm = glm::vec3(0.f, 0.f, -1.f);
     tex = glm::vec2(1.f, 0.f);
     vel = glm::vec3(0.f, 0.f, 0.f);
     acc = glm::vec3(0.f, 0.f, 0.f);
     verts.push_back(Vertex(pos, norm, tex, vel, acc));
 
-    pos = glm::vec3(-mBackWidth / 2, mBackHeight / 2, 100.f);
+    pos = glm::vec3(-mBackWidth / 2, mBackHeight / 2, mBackHeight / 2);
     norm = glm::vec3(0.f, 0.f, -1.f);
     tex = glm::vec2(0.f, 0.f);
     vel = glm::vec3(0.f, 0.f, 0.f);
     acc = glm::vec3(0.f, 0.f, 0.f);
     verts.push_back(Vertex(pos, norm, tex, vel, acc));
 
+    pos = glm::vec3(-mBackWidth / 2, -mBackHeight / 2, -mBackHeight / 2);
+    norm = glm::vec3(0.f, 0.f, 1.f);
+    tex = glm::vec2(1.f, 0.f);
+    vel = glm::vec3(0.f, 0.f, 0.f);
+    acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+    pos = glm::vec3(mBackWidth / 2, -mBackHeight / 2, -mBackHeight / 2);
+    norm = glm::vec3(0.f, 0.f, 1.f);
+    tex = glm::vec2(0.f, 0.f);
+    vel = glm::vec3(0.f, 0.f, 0.f);
+    acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+    pos = glm::vec3(mBackWidth / 2, mBackHeight / 2, -mBackHeight / 2);
+    norm = glm::vec3(0.f, 0.f, 1.f);
+    tex = glm::vec2(0.f, 1.f);
+    vel = glm::vec3(0.f, 0.f, 0.f);
+    acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+    pos = glm::vec3(-mBackWidth / 2, mBackHeight / 2, -mBackHeight / 2);
+    norm = glm::vec3(0.f, 0.f, 1.f);
+    tex = glm::vec2(1.f, 1.f);
+    vel = glm::vec3(0.f, 0.f, 0.f);
+    acc = glm::vec3(0.f, 0.f, 0.f);
+    verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
 
     vector<unsigned int> indices;
-    indices = { 1, 0, 2, 2, 3, 0 };
+    //              back                front
+    indices = { 1, 0, 2, 2, 3, 0,  5, 4, 6, 6, 7, 4,  0, 1, 4, 4, 5, 1,  1, 2, 5, 5, 6, 2,  2, 3, 6, 6, 7, 3,  3, 0, 7, 7, 4, 0};
 
     mBackground = new Mesh2D(verts, indices, mBackgroundTexture);
 }
@@ -561,13 +612,12 @@ void updateClothVerts() {
             glm::vec3 drag = normal * (1.f / 6.f) * mClothKf * length(averageVel) * length(averageVel) * area;
             myVert.mAcceleration -= drag;
             
-            /*auto diff = myVert.mPosition - mSpherePos;
+            /*auto diff = myVert.mPosition - mGhostSpherePos;
             float posLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-            if (posLength != 0.f && posLength < mSphereR && myVert.mPosition.y > mSpherePos.y) {
-                glm::vec3 normal = normalize(diff);
-                float fricForce =  mFricMu * length(mGravity) * abs(normal.x / normal.y);
-                glm::vec3 velNorm = normalize(myVert.mVelocity) * -1.f;
-                myVert.mAcceleration += velNorm * fricForce;
+            if (posLength != 0.f && posLength < mGhostSphereR + 1.f && myVert.mPosition.y > mGhostSpherePos.y) {
+                
+                glm::vec3 magneticF = normalize(diff * -1.f) * (2.f / (posLength - mGhostSphereR - 1.f));
+                myVert.mAcceleration += magneticF;
             }*/
 
             mCloth->setVertAt(i * mClothNumCols + j, myVert);
@@ -629,7 +679,7 @@ void updateClothVerts() {
         }
     }
 
-    //Eulerian integration
+    //integration
     for (int i = 0; i < mClothNumRows; i++) {
         for (int j = 0; j < mClothNumCols; j++) {
             auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
@@ -641,6 +691,15 @@ void updateClothVerts() {
             auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mClothNumCols + j);
             auto nextJVert = mCloth->getVertAt(i * mClothNumCols + j + iterDiffJ);
 
+            //Midpoint
+            /*auto dV = myVert.mAcceleration * deltaTime / 2.f;
+            myVert.mVelocity += dV;
+            auto dX = myVert.mVelocity * deltaTime;
+            myVert.mPosition += dX; 
+            dV = myVert.mAcceleration * deltaTime / 2.f;
+            myVert.mVelocity += dV;*/
+
+            //Eulerian
             auto dV = myVert.mAcceleration * deltaTime;
             myVert.mVelocity += dV;
             auto dX = myVert.mVelocity * deltaTime;
@@ -650,22 +709,30 @@ void updateClothVerts() {
 
             auto diff = myVert.mPosition - mGhostSpherePos;
             float posLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-            if (posLength != 0.f && posLength < mGhostSphereR) {
+            if (posLength != 0.f && posLength < mGhostSphereR && myVert.mPosition.y > mGhostSpherePos.y) {
                 glm::vec3 normal = diff / posLength;
                 
                 float myDot = myVert.mVelocity.x * normal.x + myVert.mVelocity.y * normal.y + myVert.mVelocity.z * normal.z;
                 glm::vec3 bounce = normal * myDot;
                 //pin the top if its on the ball so the cloth doesnt fall off
-                if (i == (int)mClothNumRows / 2 && j == (int)mClothNumCols / 2) {
+                if (i < (int)mClothNumRows / 2 + 2 && j < (int)mClothNumCols / 2 + 2 && 
+                    i > (int)mClothNumRows / 2 - 2 && j > (int)mClothNumCols / 2 - 2) {
                     myVert.mVelocity -= dV;
                     myVert.mPosition -= dX;
-                } else {
+                    //myVert.mVelocity.y = 0.f;
+                } 
+                
+                if (!(i < (int)mClothNumRows / 2 + 2 && j < (int)mClothNumCols / 2 + 2 &&
+                    i >(int)mClothNumRows / 2 - 2 && j >(int)mClothNumCols / 2 - 2)
+                    || (mGhostSpherePosDiff.x != 0 && mGhostSpherePosDiff.y != 0)) {
                     myVert.mVelocity = myVert.mVelocity - bounce * (1.f + mGhostSphereBounceScale);
                     myVert.mPosition = normal * mGhostSphereR * 1.0000001f + mGhostSpherePos;
                 }
-
-                myVert.mPosition += mGhostSpherePosDiff;
+                
+                   myVert.mPosition += mGhostSpherePosDiff;
+               
             } 
+
             mCloth->setVertAt(i * mClothNumCols + j, myVert);
         }
     }
@@ -703,9 +770,9 @@ void display() {
 
     if (mCloth) mCloth->draw();
     //if (mSphere) mSphere->draw();
-    //if (mBackground) mBackground->draw();
-    if (mPumpkin) mPumpkin->draw();
-    if (mJelly) mJelly->draw();
+    if (mBackground) mBackground->draw();
+    //if (mPumpkin) mPumpkin->draw();
+    //if (mJelly) mJelly->draw();
     
     glutSwapBuffers();
 
@@ -798,9 +865,11 @@ void animLoop(int val) {
     keyOperations();
 
     framesSinceLast += 1;
-
-    updateClothVerts();
-    //updateJellyVerts();
+    
+    for (int i = 0; i < 4; i++) {
+        updateClothVerts();
+        //updateJellyVerts();
+    }
 
     glutPostRedisplay();
     glutTimerFunc(16, animLoop, 1);
@@ -827,7 +896,7 @@ int main(int argc, char** argv) {
     glutMouseFunc(mouse);
     glutMotionFunc(drag);
 
-    //start the animation after 5 seconds as a buffer
+    //start the animation after 5 milliseconds as a buffer
     glutTimerFunc(5, animLoop, 1);
 
     //all done!
