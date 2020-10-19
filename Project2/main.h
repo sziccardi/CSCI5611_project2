@@ -97,13 +97,13 @@ const char* fragmentShaderSource = "#version 330 core\n"
 Mesh2D* mCloth = nullptr;
 const char* mClothTexture = "ghostTexture.png";
 float mClothStartHeight = 30.f;
-int mClothNumRows = 30;
-int mClothNumCols = 25;
-float mClothSpringSize = 2.f; //rest length
+int mClothNumRows = 60;
+int mClothNumCols = 50;
+float mClothSpringSize = 1.f; //rest length
 glm::vec3 mGravity = glm::vec3(0, -5.f, 0);
 float mClothMass = 1; 
-float mClothK = 550; 
-float mClothKv = 31.5; 
+float mClothK = 1600; 
+float mClothKv = 38.5; 
 float mClothKf = 0.6;
 
 void initClothVerts();

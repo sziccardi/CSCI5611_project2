@@ -595,7 +595,8 @@ void updateClothVerts() {
         for (int j = 0; j < mClothNumCols; j++) {
             auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
             myVert.mAcceleration = mGravity;//glm::vec3(0.f, 0.f, 0.f);
-            //drag
+            //
+
             int iterDiffI = 1;
             int iterDiffJ = 1;
             if (i == mClothNumRows - 1) iterDiffI = -1;
