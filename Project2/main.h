@@ -37,7 +37,7 @@ using namespace std::chrono;
 int framesSinceLast = 0;
 long lastTimeSecond = 0;
 float previousFrame = 0.0f;
-float deltaTime = 0.004f;
+float deltaTime = 0.001f;
 
 
 /* Camera things*/
@@ -100,10 +100,10 @@ float mClothStartHeight = 30.f;
 int mClothNumRows = 60;
 int mClothNumCols = 50;
 float mClothSpringSize = 1.f; //rest length
-glm::vec3 mGravity = glm::vec3(0, -5.f, 0);
-float mClothMass = 1; 
-float mClothK = 1600; 
-float mClothKv = 38.5; 
+glm::vec3 mGravity = glm::vec3(0, -29.8f, 0);
+float mClothMass = 1.f; 
+float mClothK = 10000; 
+float mClothKv = 50.5; 
 float mClothKf = 0.6;
 
 void initClothVerts();
