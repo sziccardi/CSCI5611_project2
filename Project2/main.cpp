@@ -123,13 +123,18 @@ void drag(int x, int y) {
 }
 
 void initClothVerts() {
-    if (mCloth) {
+    if (mCloth || mCloth1) {
         auto c = mCloth;
         delete(c);
         mCloth = nullptr;
+
+        auto c1 = mCloth1;
+        delete(c1);
+        mCloth1 = nullptr;
     }
 
     vector<Vertex> verts;
+    vector<Vertex> verts1;
     vector<unsigned int> indices;
     for (int y = 0; y < mClothNumRows; y++) {
         for (int x = 0; x < mClothNumCols; x++) {
@@ -148,10 +153,13 @@ void initClothVerts() {
             glm::vec3 vel = glm::vec3(0.f, 0.f, 0.f);
             glm::vec3 acc = glm::vec3(0.f, 0.f, 0.f);
             verts.push_back(Vertex(pos, norm, tex, vel, acc));
+
+            verts1.push_back(Vertex(pos + mGhostSpherePos1, norm, tex, vel, acc));
         }
     }
 
     mCloth = new Mesh2D(verts, indices, mClothTexture);
+    mCloth1 = new Mesh2D(verts1, indices, mClothTexture);
 }
 
 void initGhostSphereVerts() {
@@ -589,11 +597,13 @@ void updateAccJellyVerts(int origIter, int nextIter, float restLen) {
     mJelly->setVertAt(nextIter, nextVert);
 }
 
-void updateClothVerts() {
+void updateClothVerts(Mesh2D* cloth, bool orig) {
+    glm::vec3 spherePos = mGhostSpherePos;
+    if (!orig) spherePos = mGhostSpherePos1;
     //Reset accelerations each timestep (momentum only applies to velocity)
     for (int i = 0; i < mClothNumRows; i++) {
         for (int j = 0; j < mClothNumCols; j++) {
-            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
+            auto myVert = cloth->getVertAt(i * mClothNumCols + j);
             myVert.mAcceleration = mGravity;//glm::vec3(0.f, 0.f, 0.f);
             //
 
@@ -601,8 +611,8 @@ void updateClothVerts() {
             int iterDiffJ = 1;
             if (i == mClothNumRows - 1) iterDiffI = -1;
             if (j == mClothNumCols - 1) iterDiffJ = -1;
-            auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mClothNumCols + j);
-            auto nextJVert = mCloth->getVertAt(i * mClothNumCols + j + iterDiffJ);
+            auto nextIVert = cloth->getVertAt((i + iterDiffI) * mClothNumCols + j);
+            auto nextJVert = cloth->getVertAt(i * mClothNumCols + j + iterDiffJ);
             glm::vec3 averageVel = (nextIVert.mVelocity + nextJVert.mVelocity + myVert.mVelocity) / 3.f;
             glm::vec3 normal = normalize(cross(nextJVert.mPosition - myVert.mPosition, nextIVert.mPosition - myVert.mPosition));
             float area = 0.5f * length(cross((nextJVert.mPosition - myVert.mPosition), (nextIVert.mPosition - myVert.mPosition)));
@@ -621,17 +631,17 @@ void updateClothVerts() {
                 myVert.mAcceleration += magneticF;
             }*/
 
-            mCloth->setVertAt(i * mClothNumCols + j, myVert);
+            cloth->setVertAt(i * mClothNumCols + j, myVert);
         }
     }
 
     //Compute (damped) Hooke's law for each spring
     for (int i = 0; i < mClothNumRows; i++) {
         for (int j = 0; j < mClothNumCols; j++) {
-            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
+            auto myVert = cloth->getVertAt(i * mClothNumCols + j);
             
             if (i != mClothNumRows - 1) {
-                auto nextVert = mCloth->getVertAt((i + 1) * mClothNumCols + j);
+                auto nextVert = cloth->getVertAt((i + 1) * mClothNumCols + j);
                 glm::vec3 diff = nextVert.mPosition - myVert.mPosition;
                 float diffLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
                 float stringF = -mClothK * (diffLength - mClothSpringSize);
@@ -650,12 +660,12 @@ void updateClothVerts() {
                 nextVert.mAcceleration += (force*(1.f / mClothMass));
 
 
-                mCloth->setVertAt(i * mClothNumCols + j, myVert); //mine
-                mCloth->setVertAt((i + 1) * mClothNumCols + j, nextVert); //down
+                cloth->setVertAt(i * mClothNumCols + j, myVert); //mine
+                cloth->setVertAt((i + 1) * mClothNumCols + j, nextVert); //down
             }
 
             if (j != mClothNumCols - 1) {
-                auto nextVert = mCloth->getVertAt(i * mClothNumCols + j + 1);
+                auto nextVert = cloth->getVertAt(i * mClothNumCols + j + 1);
                 glm::vec3 diff = nextVert.mPosition - myVert.mPosition;
                 float diffLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
                 float stringF = -mClothK * (diffLength - mClothSpringSize);
@@ -674,8 +684,8 @@ void updateClothVerts() {
                 nextVert.mAcceleration += (force * (1.f / mClothMass));
 
 
-                mCloth->setVertAt(i * mClothNumCols + j, myVert); //mine
-                mCloth->setVertAt(i * mClothNumCols + j + 1, nextVert); //right
+                cloth->setVertAt(i * mClothNumCols + j, myVert); //mine
+                cloth->setVertAt(i * mClothNumCols + j + 1, nextVert); //right
             }
         }
     }
@@ -683,14 +693,14 @@ void updateClothVerts() {
     //integration
     for (int i = 0; i < mClothNumRows; i++) {
         for (int j = 0; j < mClothNumCols; j++) {
-            auto myVert = mCloth->getVertAt(i * mClothNumCols + j);
+            auto myVert = cloth->getVertAt(i * mClothNumCols + j);
 
             int iterDiffI = 1;
             int iterDiffJ = 1;
             if (i == mClothNumRows - 1) iterDiffI = -1;
             if (j == mClothNumCols - 1) iterDiffJ = -1;
-            auto nextIVert = mCloth->getVertAt((i + iterDiffI) * mClothNumCols + j);
-            auto nextJVert = mCloth->getVertAt(i * mClothNumCols + j + iterDiffJ);
+            auto nextIVert = cloth->getVertAt((i + iterDiffI) * mClothNumCols + j);
+            auto nextJVert = cloth->getVertAt(i * mClothNumCols + j + iterDiffJ);
 
             //Midpoint
             /*auto dV = myVert.mAcceleration * deltaTime / 2.f;
@@ -708,9 +718,9 @@ void updateClothVerts() {
 
             myVert.mNormal = normalize(cross(nextJVert.mPosition - myVert.mPosition, nextIVert.mPosition - myVert.mPosition));
 
-            auto diff = myVert.mPosition - mGhostSpherePos;
+            auto diff = myVert.mPosition - spherePos;
             float posLength = sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-            if (posLength != 0.f && posLength < mGhostSphereR && myVert.mPosition.y > mGhostSpherePos.y) {
+            if (posLength != 0.f && posLength < mGhostSphereR && myVert.mPosition.y > spherePos.y) {
                 glm::vec3 normal = diff / posLength;
                 
                 float myDot = myVert.mVelocity.x * normal.x + myVert.mVelocity.y * normal.y + myVert.mVelocity.z * normal.z;
@@ -727,14 +737,14 @@ void updateClothVerts() {
                     i >(int)mClothNumRows / 2 - 2 && j >(int)mClothNumCols / 2 - 2)
                     || (mGhostSpherePosDiff.x != 0 && mGhostSpherePosDiff.y != 0)) {
                     myVert.mVelocity = myVert.mVelocity - bounce * (1.f + mGhostSphereBounceScale);
-                    myVert.mPosition = normal * mGhostSphereR * 1.0000001f + mGhostSpherePos;
+                    myVert.mPosition = normal * mGhostSphereR * 1.0000001f + spherePos;
                 }
                 
                    myVert.mPosition += mGhostSpherePosDiff;
                
             } 
 
-            mCloth->setVertAt(i * mClothNumCols + j, myVert);
+            cloth->setVertAt(i * mClothNumCols + j, myVert);
         }
     }
 }
@@ -770,6 +780,7 @@ void display() {
     glUniformMatrix4fv(glGetUniformLocation(mShaderProgram, "model"), 1, GL_FALSE, &model[0][0]);
 
     if (mCloth) mCloth->draw();
+    if (mCloth1) mCloth1->draw();
     //if (mSphere) mSphere->draw();
     if (mBackground) mBackground->draw();
     //if (mPumpkin) mPumpkin->draw();
@@ -868,7 +879,8 @@ void animLoop(int val) {
     framesSinceLast += 1;
     
     for (int i = 0; i < 16; i++) {
-        updateClothVerts();
+        updateClothVerts(mCloth, true);
+        updateClothVerts(mCloth1, false);
         //updateJellyVerts();
     }
 

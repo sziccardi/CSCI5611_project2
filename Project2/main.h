@@ -95,19 +95,20 @@ const char* fragmentShaderSource = "#version 330 core\n"
 
 /* Cloth things */
 Mesh2D* mCloth = nullptr;
+Mesh2D* mCloth1 = nullptr;
 const char* mClothTexture = "ghostTexture.png";
 float mClothStartHeight = 30.f;
-int mClothNumRows = 60;
-int mClothNumCols = 50;
-float mClothSpringSize = 1.f; //rest length
+int mClothNumRows = 30;
+int mClothNumCols = 25;
+float mClothSpringSize = 2.f; //rest length
 glm::vec3 mGravity = glm::vec3(0, -29.8f, 0);
-float mClothMass = 1.f; 
-float mClothK = 10000; 
-float mClothKv = 50.5; 
+float mClothMass = 1.f;
+float mClothK = 10000;
+float mClothKv = 50.5;
 float mClothKf = 0.6;
 
 void initClothVerts();
-void updateClothVerts();
+void updateClothVerts(Mesh2D* cloth, bool orig);
 
 /* Ghost sphere things */
 float mGhostSphereBounceScale = 0.01f;
@@ -117,6 +118,7 @@ int mGhostSphereNumHorizSlices = 5;
 Mesh2D* mGhostSphere = nullptr;
 const char* mGhostSphereTexture = "sphereTexture.png";
 glm::vec3 mGhostSpherePos = glm::vec3(0.f, 0.f, 0.f);
+glm::vec3 mGhostSpherePos1 = glm::vec3(20.f, 20.f, 50.f);
 glm::vec3 mGhostSpherePosDiff = glm::vec3(0.f, 0.f, 0.f);
 float mMaxDiff = 0.1f;
 
@@ -124,7 +126,7 @@ void initGhostSphereVerts();
 
 /* Background things */
 Mesh2D* mBackground = nullptr;
-const char* mBackgroundTexture = "backgroundTexture2.png";
+const char* mBackgroundTexture = "backgroundTexture.jpg";
 float mBackHeight = 500.f;
 float mBackWidth = 500.f;
 
